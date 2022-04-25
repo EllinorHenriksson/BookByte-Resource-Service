@@ -23,14 +23,9 @@ export class BookController {
   async loadBook (req, res, next, id) {
     try {
       req.book = await Book.findById(id)
-
-      if (!req.book) {
-        return next(createError(404, 'The requested resource was not found.'))
-      }
-
       next()
     } catch (error) {
-      next(error)
+      next(createError(404, 'The requested resource was not found.'))
     }
   }
 
@@ -67,8 +62,10 @@ export class BookController {
   async findMatches (req, res, next) {
     try {
       // OBS! Gör om allt i denna metod (tillhör findAll)
-      const books = await Book.find()
+      // OBS! Denna rad funkar!
+      const books = await Book.find({ wantedBy: req.user })
 
+      /*
       // Get the books that the user owns.
       const ownedBooks = books.filter(book => book.ownedBy.includes(req.user))
 
@@ -76,6 +73,7 @@ export class BookController {
       const wantedBooks = books.filter(book => book.wantedBy.includes(req.user))
 
       res.json({ owned: ownedBooks, wanted: wantedBooks })
+      */
     } catch (error) {
       next(error)
     }
@@ -90,17 +88,22 @@ export class BookController {
    */
   async create (req, res, next) {
     try {
-      const book = await Book.find({ googleId: req.body.googleId })
+      // Validate input.
+      if (!req.body.googleId || !req.body.type || (req.body.type !== 'owned' && req.body.type !== 'wanted')) {
+        res.status(400, 'The requested data was not provided.').end()
+      }
+
+      const book = await Book.findOne({ googleId: req.body.googleId })
       // If book already exists in database...
       if (book) {
-        if (book.ownedBy.includes(req.user) || book.wantedBy.includes(req.user)) {
+        if (book.ownedBy?.includes(req.user) || book.wantedBy?.includes(req.user)) {
           // Do not add user to book if already added.
           return next(createError(409, 'Book already added as owned or wanted.'))
         }
 
-        if (req.body.status === 'owned') {
+        if (req.body.type === 'owned') {
           book.ownedBy.push(req.user)
-        } else if (req.body.status === 'wanted') {
+        } else if (req.body.type === 'wanted') {
           book.wantedBy.push(req.user)
         }
 
@@ -113,9 +116,9 @@ export class BookController {
           wantedBy: []
         }
 
-        if (req.body.status === 'owned') {
+        if (req.body.type === 'owned') {
           data.ownedBy.push(req.user)
-        } else if (req.body.statsu === 'wanted') {
+        } else if (req.body.type === 'wanted') {
           data.wantedBy.push(req.user)
         }
 
@@ -124,10 +127,22 @@ export class BookController {
         await newBook.save()
       }
       // Prepare and send book data in response.
-      const sameBook = await Book.find({ googleId: req.body.googleId })
+      const sameBook = await Book.findOne({ googleId: req.body.googleId })
       res.status(201, 'Book was succesfully added.').json(sameBook)
     } catch (error) {
-      next(error)
+      let err = error
+
+      if (err.code === 11000) {
+        // Duplicated keys.
+        err = createError(409, 'The  and/or email address already registered.')
+        err.cause = error
+      } else if (error.name === 'ValidationError') {
+        // Validation error(s).
+        err = createError(400, error.message)
+        err.cause = error
+      }
+
+      next(err)
     }
   }
 
@@ -167,6 +182,9 @@ export class BookController {
       if (!req.book.ownedBy.length && !req.book.wantedBy.length) {
         // ...remove book from collection.
         await req.book.remove()
+      } else {
+        // ...else save updates.
+        await req.book.save()
       }
 
       res.status(204).end()

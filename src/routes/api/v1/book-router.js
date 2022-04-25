@@ -59,19 +59,24 @@ const authenticateJWT = (req, res, next) => {
  * @param {Function} next - Express next middleware function.
  */
 const hasPermission = (req, res, next) => {
+  let same = false
   req.book.ownedBy.forEach(user => {
     if (user === req.user) {
-      return next()
+      same = true
     }
   })
 
   req.book.wantedBy.forEach(user => {
     if (user === req.user) {
-      return next()
+      same = true
     }
   })
 
-  next(createError(403, 'Permission to the requested resource was denied.'))
+  if (same) {
+    next()
+  } else {
+    next(createError(403, 'Permission to the requested resource was denied.'))
+  }
 }
 
 // Provide req.book to the route if :id is present in the route path.

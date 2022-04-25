@@ -47,4 +47,4 @@ schema.virtual('id').get(function () {
 })
 
 // Create a model using the schema.
-export const Book = mongoose.model('Image', schema)
+export const Book = mongoose.model('Book', schema)
