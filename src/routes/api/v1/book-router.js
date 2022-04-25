@@ -75,22 +75,14 @@ router.get('/',
   (req, res, next) => controller.findAll(req, res, next)
 )
 
+router.post('/',
+  authenticateJWT,
+  (req, res, next) => controller.create(req, res, next)
+)
+
 router.get('/:id',
   authenticateJWT,
   (req, res, next) => controller.find(req, res, next)
-)
-
-// OBS! Fortsätt här! Behövs verkligen PATCH och PUT?
-router.patch('/:id',
-  authenticateJWT,
-  hasPermission,
-  (req, res, next) => controller.partialUpdate(req, res, next)
-)
-
-router.put('/:id',
-  authenticateJWT,
-  hasPermission,
-  (req, res, next) => controller.fullUpdate(req, res, next)
 )
 
 router.delete('/:id',

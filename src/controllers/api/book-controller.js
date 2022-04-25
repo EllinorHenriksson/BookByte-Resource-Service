@@ -35,7 +35,7 @@ export class BookController {
   }
 
   /**
-   * Sends a JSON response containing all books.
+   * Sends a JSON response containing all of the user's books (owned/wanted).
    *
    * @param {object} req - Express request object.
    * @param {object} res - Express response object.
@@ -45,7 +45,13 @@ export class BookController {
     try {
       const books = await Book.find()
 
-      res.json(books)
+      // Get the books that the user owns.
+      const ownedBooks = books.filter(book => book.ownedBy.includes(req.user))
+
+      // Get the books that the user wants to have.
+      const wantedBooks = books.filter(book => book.wantedBy.includes(req.user))
+
+      res.json({ owned: ownedBooks, wanted: wantedBooks })
     } catch (error) {
       next(error)
     }
@@ -116,29 +122,19 @@ export class BookController {
     res.json(req.book)
   }
 
-  // OBS! Hur göra med detta? Routes?
   /**
-   * Sends a JSON response containing all books.
+   * Deletes book.
    *
    * @param {object} req - Express request object.
    * @param {object} res - Express response object.
    * @param {Function} next - Express next middleware function.
    */
-  async findAllOfUser (req, res, next) {
+  delete (req, res, next) {
     try {
-      const books = await Book.find()
-
-      // Get the books that the user owns.
-      const ownedBooks = books.filter(book => book.ownedBy.includes(req.user))
-
-      // Get the books that the user wants to have.
-      const wantedBooks = books.filter(book => book.wantedBy.includes(req.user))
-
-      res.json({ owns: ownedBooks, wants: wantedBooks })
+      req.book.remove()
+      res.status(204).end()
     } catch (error) {
       next(error)
     }
   }
 }
-
-// OBS! Vad ska skickas med till klienten? Räcker det med googleID eller bör anrop göras från resource service till Google Books API och data sedan skickas tillbaka som json?
