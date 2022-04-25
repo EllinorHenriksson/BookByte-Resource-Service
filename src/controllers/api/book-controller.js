@@ -58,6 +58,30 @@ export class BookController {
   }
 
   /**
+   * Sends a JSON response containing all book matches for the user.
+   *
+   * @param {object} req - Express request object.
+   * @param {object} res - Express response object.
+   * @param {Function} next - Express next middleware function.
+   */
+  async findMatches (req, res, next) {
+    try {
+      // OBS! Gör om allt i denna metod (tillhör findAll)
+      const books = await Book.find()
+
+      // Get the books that the user owns.
+      const ownedBooks = books.filter(book => book.ownedBy.includes(req.user))
+
+      // Get the books that the user wants to have.
+      const wantedBooks = books.filter(book => book.wantedBy.includes(req.user))
+
+      res.json({ owned: ownedBooks, wanted: wantedBooks })
+    } catch (error) {
+      next(error)
+    }
+  }
+
+  /**
    * Creates a book if book not already stored in database, and adds user to the book.
    *
    * @param {object} req - Express request object.

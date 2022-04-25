@@ -88,6 +88,11 @@ router.post('/',
   (req, res, next) => controller.create(req, res, next)
 )
 
+router.get('/matches',
+  authenticateJWT,
+  (req, res, next) => controller.findMatches(req, res, next)
+)
+
 router.get('/:id',
   authenticateJWT,
   (req, res, next) => controller.find(req, res, next)
