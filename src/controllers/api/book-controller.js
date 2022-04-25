@@ -123,7 +123,7 @@ export class BookController {
   }
 
   /**
-   * Deletes book.
+   * Removes user from book.
    *
    * @param {object} req - Express request object.
    * @param {object} res - Express response object.
@@ -131,6 +131,7 @@ export class BookController {
    */
   delete (req, res, next) {
     try {
+      req.book.ownedBy
       req.book.remove()
       res.status(204).end()
     } catch (error) {
