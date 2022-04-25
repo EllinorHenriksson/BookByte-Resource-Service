@@ -69,21 +69,17 @@ export class BookController {
       const book = await Book.find({ googleId: req.body.googleId })
       // If book already exists in database...
       if (book) {
-        if (req.body.status === 'owned') {
-          if (!book.ownedBy.includes(req.user)) {
-            book.ownedBy.push(req.user)
-          } else {
-            // Do not add user to book if already added.
-            return next(createError(409, 'Book already added.'))
-          }
-        } else if (req.body.status === 'wanted') {
-          if (!book.wantedBy.includes(req.user)) {
-            book.wantedBy.push(req.user)
-          } else {
-            // Do not add user to book if already added.
-            return next(createError(409, 'Book already added.'))
-          }
+        if (book.ownedBy.includes(req.user) || book.wantedBy.includes(req.user)) {
+          // Do not add user to book if already added.
+          return next(createError(409, 'Book already added as owned or wanted.'))
         }
+
+        if (req.body.status === 'owned') {
+          book.ownedBy.push(req.user)
+        } else if (req.body.status === 'wanted') {
+          book.wantedBy.push(req.user)
+        }
+
         await book.save()
       } else {
         // (If book not already exists in database...)
@@ -123,16 +119,32 @@ export class BookController {
   }
 
   /**
-   * Removes user from book.
+   * Removes user from book, and removes book if no connected users are left.
    *
    * @param {object} req - Express request object.
    * @param {object} res - Express response object.
    * @param {Function} next - Express next middleware function.
    */
-  delete (req, res, next) {
+  async delete (req, res, next) {
     try {
-      req.book.ownedBy
-      req.book.remove()
+      // Check if user owns the book, then remove user from book.
+      const indexOwned = req.book.ownedBy.findIndex(user => user === req.user)
+      if (indexOwned >= 0) {
+        req.book.ownedBy.splice(indexOwned, 1)
+      } else {
+        // Check if user wants the book, then remove user from book.
+        const indexWanted = req.book.wantedBy.findIndex(user => user === req.user)
+        if (indexWanted >= 0) {
+          req.book.wantedBy.splice(indexWanted, 1)
+        }
+      }
+
+      // If no user connections left to book...
+      if (!req.book.ownedBy.length && !req.book.wantedBy.length) {
+        // ...remove book from collection.
+        await req.book.remove()
+      }
+
       res.status(204).end()
     } catch (error) {
       next(error)
