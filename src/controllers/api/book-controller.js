@@ -38,13 +38,10 @@ export class BookController {
    */
   async findAll (req, res, next) {
     try {
-      const books = await Book.find()
+      const ownedBooksProm = Book.find({ ownedBy: req.user })
+      const wantedBooksProm = Book.find({ wantedBy: req.user })
 
-      // Get the books that the user owns.
-      const ownedBooks = books.filter(book => book.ownedBy.includes(req.user))
-
-      // Get the books that the user wants to have.
-      const wantedBooks = books.filter(book => book.wantedBy.includes(req.user))
+      const [ownedBooks, wantedBooks] = await Promise.all([ownedBooksProm, wantedBooksProm])
 
       res.json({ owned: ownedBooks, wanted: wantedBooks })
     } catch (error) {
