@@ -58,19 +58,29 @@ export class BookController {
    */
   async findMatches (req, res, next) {
     try {
-      // OBS! Gör om allt i denna metod (tillhör findAll)
-      // OBS! Denna rad funkar!
-      const books = await Book.find({ wantedBy: req.user })
+      const wantedBooks = await Book.find({ wantedBy: req.user })
 
-      /*
-      // Get the books that the user owns.
-      const ownedBooks = books.filter(book => book.ownedBy.includes(req.user))
+      const matches = []
 
-      // Get the books that the user wants to have.
-      const wantedBooks = books.filter(book => book.wantedBy.includes(req.user))
+      for (let i = 0; i < wantedBooks.length; i++) {
+        const wantedBook = wantedBooks[i]
+        for (let j = 0; j < wantedBook.ownedBy.length; j++) {
+          const owner = wantedBook.ownedBy[j]
+          const wantedBooksOwner = await Book.find({ wantedBy: owner })
+          for (let k = 0; k < wantedBooksOwner.length; k++) {
+            const wantedBookOwner = wantedBooksOwner[k]
+            if (wantedBookOwner.ownedBy.includes(req.user)) {
+              matches.push({
+                toGive: wantedBookOwner,
+                toGet: wantedBook,
+                otherUser: owner
+              })
+            }
+          }
+        }
+      }
 
-      res.json({ owned: ownedBooks, wanted: wantedBooks })
-      */
+      res.json(matches)
     } catch (error) {
       next(error)
     }
