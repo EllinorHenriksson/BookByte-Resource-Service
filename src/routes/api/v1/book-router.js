@@ -41,7 +41,7 @@ const authenticateJWT = (req, res, next) => {
 
     next()
   } catch (err) {
-    const error = createError(401, 'Invalid JWT token')
+    const error = createError(401, 'Invalid JWT')
     error.cause = err
     next(error)
   }
