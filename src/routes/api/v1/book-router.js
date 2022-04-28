@@ -41,7 +41,7 @@ const authenticateJWT = (req, res, next) => {
 
     next()
   } catch (err) {
-    const error = createError(401, 'Invalid JWT')
+    const error = createError(401, 'JWT invalid or not provided')
     error.cause = err
     next(error)
   }
@@ -75,7 +75,7 @@ const hasPermission = (req, res, next) => {
   if (same) {
     next()
   } else {
-    next(createError(403, 'Permission to the requested resource was denied.'))
+    next(createError(403, 'Permission to the requested resource was denied'))
   }
 }
 

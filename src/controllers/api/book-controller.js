@@ -25,7 +25,7 @@ export class BookController {
       req.book = await Book.findById(id)
       next()
     } catch (error) {
-      next(createError(404, 'The requested resource was not found.'))
+      next(createError(404, 'The requested resource was not found'))
     }
   }
 
@@ -38,6 +38,7 @@ export class BookController {
    */
   async findAll (req, res, next) {
     try {
+      console.log('req.user: ', req.user)
       const ownedBooksProm = Book.find({ ownedBy: req.user })
       const wantedBooksProm = Book.find({ wantedBy: req.user })
 
@@ -97,7 +98,7 @@ export class BookController {
     try {
       // Validate input.
       if (!req.body.googleId || !req.body.type || (req.body.type !== 'owned' && req.body.type !== 'wanted')) {
-        res.status(400, 'The requested data was not provided.').end()
+        return next(createError(400, 'The requested data was not provided'))
       }
 
       const book = await Book.findOne({ googleId: req.body.googleId })
@@ -105,7 +106,7 @@ export class BookController {
       if (book) {
         if (book.ownedBy?.includes(req.user) || book.wantedBy?.includes(req.user)) {
           // Do not add user to book if already added.
-          return next(createError(409, 'Book already added as owned or wanted.'))
+          return next(createError(409, 'Book already added as owned or wanted'))
         }
 
         if (req.body.type === 'owned') {
@@ -139,11 +140,7 @@ export class BookController {
     } catch (error) {
       let err = error
 
-      if (err.code === 11000) {
-        // Duplicated keys.
-        err = createError(409, 'The  and/or email address already registered.')
-        err.cause = error
-      } else if (error.name === 'ValidationError') {
+      if (error.name === 'ValidationError') {
         // Validation error(s).
         err = createError(400, error.message)
         err.cause = error
