@@ -93,6 +93,11 @@ router.post('/',
   (req, res, next) => controller.create(req, res, next)
 )
 
+router.delete('/',
+  authenticateJWT,
+  (req, res, next) => controller.deleteAll(req, res, next)
+)
+
 router.get('/matches',
   authenticateJWT,
   (req, res, next) => controller.findMatches(req, res, next)
@@ -106,5 +111,5 @@ router.get('/:id',
 router.delete('/:id',
   authenticateJWT,
   hasPermission,
-  (req, res, next) => controller.delete(req, res, next)
+  (req, res, next) => controller.deleteOne(req, res, next)
 )

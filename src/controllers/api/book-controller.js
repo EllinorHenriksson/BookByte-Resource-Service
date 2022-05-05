@@ -6,6 +6,7 @@
  */
 
 import createError from 'http-errors'
+import * as helper from '../../helpers/controller-helper.js'
 import { Book } from '../../models/book.js'
 
 /**
@@ -38,13 +39,8 @@ export class BookController {
    */
   async findAll (req, res, next) {
     try {
-      console.log('req.user: ', req.user)
-      const ownedBooksProm = Book.find({ ownedBy: req.user })
-      const wantedBooksProm = Book.find({ wantedBy: req.user })
-
-      const [ownedBooks, wantedBooks] = await Promise.all([ownedBooksProm, wantedBooksProm])
-
-      res.json({ owned: ownedBooks, wanted: wantedBooks })
+      const books = await helper.getBooks(req.user)
+      res.json(books)
     } catch (error) {
       next(error)
     }
@@ -136,7 +132,7 @@ export class BookController {
       }
       // Prepare and send book data in response.
       const sameBook = await Book.findOne({ googleId: req.body.googleId })
-      res.status(201, 'Book was succesfully added.').json(sameBook)
+      res.status(201).json(sameBook)
     } catch (error) {
       let err = error
 
@@ -168,28 +164,35 @@ export class BookController {
    * @param {object} res - Express response object.
    * @param {Function} next - Express next middleware function.
    */
-  async delete (req, res, next) {
+  async deleteOne (req, res, next) {
     try {
-      // Check if user owns the book, then remove user from book.
-      const indexOwned = req.book.ownedBy.findIndex(user => user === req.user)
-      if (indexOwned >= 0) {
-        req.book.ownedBy.splice(indexOwned, 1)
-      } else {
-        // Check if user wants the book, then remove user from book.
-        const indexWanted = req.book.wantedBy.findIndex(user => user === req.user)
-        if (indexWanted >= 0) {
-          req.book.wantedBy.splice(indexWanted, 1)
-        }
+      await helper.deleteBook(req.book, req.user)
+      res.status(204).end()
+    } catch (error) {
+      next(error)
+    }
+  }
+
+  /**
+   * Removes user from all books, and removes books if no connected users are left.
+   *
+   * @param {object} req - Express request object.
+   * @param {object} res - Express response object.
+   * @param {Function} next - Express next middleware function.
+   */
+  async deleteAll (req, res, next) {
+    try {
+      // Get all books the user has connections to.
+      const { owned, wanted } = await helper.getBooks(req.user)
+      const books = [...owned, ...wanted]
+
+      const promises = []
+      for (let i = 0; i < books.length; i++) {
+        const book = books[i]
+        promises.push(helper.deleteBook(book, req.user))
       }
 
-      // If no user connections left to book...
-      if (!req.book.ownedBy.length && !req.book.wantedBy.length) {
-        // ...remove book from collection.
-        await req.book.remove()
-      } else {
-        // ...else save updates.
-        await req.book.save()
-      }
+      await Promise.all(promises)
 
       res.status(204).end()
     } catch (error) {
