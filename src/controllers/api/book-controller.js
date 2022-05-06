@@ -92,12 +92,15 @@ export class BookController {
    */
   async create (req, res, next) {
     try {
+      const info = req.body.info
+      const type = req.body.type
+
       // Validate input.
-      if (!req.body.googleId || !req.body.type || (req.body.type !== 'owned' && req.body.type !== 'wanted')) {
+      if (!info.googleId || !type || (type !== 'owned' && type !== 'wanted')) {
         return next(createError(400, 'The requested data was not provided'))
       }
 
-      const book = await Book.findOne({ googleId: req.body.googleId })
+      const book = await Book.findOne({ googleId: info.googleId })
       // If book already exists in database...
       if (book) {
         if (book.ownedBy?.includes(req.user) || book.wantedBy?.includes(req.user)) {
@@ -105,24 +108,25 @@ export class BookController {
           return next(createError(409, 'Book already added as owned or wanted'))
         }
 
-        if (req.body.type === 'owned') {
+        if (type === 'owned') {
           book.ownedBy.push(req.user)
-        } else if (req.body.type === 'wanted') {
+        } else if (type === 'wanted') {
           book.wantedBy.push(req.user)
         }
 
         await book.save()
       } else {
         // (If book not already exists in database...)
+
         const data = {
-          googleId: req.body.googleId,
+          ...info,
           ownedBy: [],
           wantedBy: []
         }
 
-        if (req.body.type === 'owned') {
+        if (type === 'owned') {
           data.ownedBy.push(req.user)
-        } else if (req.body.type === 'wanted') {
+        } else if (type === 'wanted') {
           data.wantedBy.push(req.user)
         }
 
@@ -131,8 +135,9 @@ export class BookController {
         await newBook.save()
       }
       // Prepare and send book data in response.
-      const sameBook = await Book.findOne({ googleId: req.body.googleId })
-      res.status(201).json(sameBook)
+      const sameBook = await Book.findOne({ googleId: info.googleId })
+
+      res.status(201).json({ id: sameBook.id })
     } catch (error) {
       let err = error
 
@@ -154,7 +159,17 @@ export class BookController {
    * @param {Function} next - Express next middleware function.
    */
   find (req, res, next) {
-    res.json(req.book)
+    let type = 'none'
+
+    if (req.book.ownedBy?.includes(req.user)) {
+      type = 'owned'
+    }
+
+    if (req.book.wantedBy?.includes(req.user)) {
+      type = 'wanted'
+    }
+
+    res.json({ info: req.book, type })
   }
 
   /**
