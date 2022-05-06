@@ -96,7 +96,7 @@ export class BookController {
       const type = req.body.type
 
       // Validate input.
-      if (!info.googleId || !type || (type !== 'owned' && type !== 'wanted')) {
+      if (!info?.googleId || !type || (type !== 'owned' && type !== 'wanted')) {
         return next(createError(400, 'The requested data was not provided'))
       }
 
