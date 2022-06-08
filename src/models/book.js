@@ -24,41 +24,32 @@ const schema = new mongoose.Schema({
   authors: {
     type: [String],
     required: [true, 'Authors are required.']
-
   },
   publisher: {
-    type: String,
-    required: [true, 'Publisher is required.']
+    type: String
   },
   publishedDate: {
-    type: String,
-    required: [true, 'Publish date is required.']
+    type: String
   },
   description: {
-    type: String,
-    required: [true, 'Description is required.']
+    type: String
   },
   pageCount: {
-    type: Number,
-    required: [true, 'Page count is required.']
+    type: Number
   },
   categories: {
-    type: [String],
-    required: [true, 'Categories are required.']
+    type: [String]
   },
   imageLinks: {
     smallThumbnail: {
-      type: String,
-      required: [true, 'Small thumbnail is required.']
+      type: String
     },
     thumbnail: {
-      type: String,
-      required: [true, 'Thumbnail is required.']
+      type: String
     }
   },
   language: {
-    type: String,
-    required: [true, 'Language is required.']
+    type: String
   },
   ownedBy: {
     type: [String]
